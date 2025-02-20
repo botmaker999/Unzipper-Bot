@@ -2,28 +2,27 @@ FROM archlinux:latest
 
 # Update system and install required packages
 RUN pacman -Syyu --noconfirm && \
-    pacman -S --noconfirm python python-pip python-virtualenv zstd p7zip gcc
+    pacman -S --noconfirm python python-pip zstd p7zip gcc
 
-# Set working directory
+# Create working directory
+RUN mkdir /app/
 WORKDIR /app/
 
 # Copy application code into the container
 COPY . /app/
 
-# Create a virtual environment in /app/venv
-RUN python -m venv /app/venv
+# (Optional) Create a virtual environment if you wish to isolate Python packages
+# RUN python -m venv /app/venv
+# RUN /app/venv/bin/pip install --upgrade pip setuptools
+# RUN /app/venv/bin/pip install -r requirements.txt
 
-# Upgrade pip and setuptools inside the virtual environment
-RUN /app/venv/bin/pip install --upgrade pip setuptools
+# Install Python dependencies globally (if not using a virtual environment)
+RUN pip3 install --upgrade setuptools pip && \
+    pip3 install -r requirements.txt
 
-# Install Python dependencies from requirements.txt within the virtual environment
-RUN /app/venv/bin/pip install -r requirements.txt
-
-# Expose the port Heroku assigns (defaulting to 5000 if not set)
+# Expose the Heroku port. Heroku provides the PORT env variable at runtime.
 EXPOSE ${PORT:-5000}
 
-# Set the startup command.
-# If your start.sh is a shell script, you can use:
-# CMD ["/bin/bash", "start.sh"]
-# Otherwise, if it's a Python script, you might invoke it as shown below.
-CMD ["/app/venv/bin/python", "start.sh"]
+# Start the application.
+# Make sure your start.sh listens on the port specified by $PORT.
+CMD ["/bin/bash", "start.sh"]
